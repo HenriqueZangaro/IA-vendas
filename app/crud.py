@@ -18,12 +18,23 @@ def clean_whatsapp_number(whatsapp_number: str) -> str:
 def get_thread_by_number(db: Session, whatsapp_number: str):
     """ Busca uma thread pelo número do WhatsApp. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
+    
     query = select(threads).where(threads.c.whatsapp_number == cleaned_number)
-    return db.execute(query).fetchone()  # ✅ Correção: usar `fetchone()` diretamente
+    result = db.execute(query).fetchone()  # ✅ Usa `fetchone()` diretamente para obter a linha
+    
+    if result:
+        return {"whatsapp_number": result.whatsapp_number, "thread_id": result.thread_id}
+    
+    return None
 
-def create_thread(db: Session, whatsapp_number: str):
+def create_thread(db: Session, whatsapp_number: str, thread_id: str):
     """ Cria uma nova thread no banco de dados. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
-    stmt = insert(threads).values(whatsapp_number=cleaned_number)
+    
+    stmt = insert(threads).values(
+        whatsapp_number=cleaned_number,
+        thread_id=thread_id  # ✅ Agora inclui o `thread_id`
+    )
+    
     db.execute(stmt)
-    db.commit()  # ✅ Correção: precisa de `commit()` para salvar as alterações no banco
+    db.commit()  # ✅ Necessário para salvar a alteração no banco
