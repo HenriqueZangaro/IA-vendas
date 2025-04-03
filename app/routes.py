@@ -9,7 +9,7 @@ router = APIRouter()  # ✅ Criando um roteador em vez de FastAPI diretamente
 
 class ThreadCreateRequest(BaseModel):
     whatsapp_number: str
-    thread_id: str
+    external_thread_id: str  # Alterado para refletir a nova coluna no banco
 
 @router.post("/create-thread/")
 def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
@@ -21,12 +21,12 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
     
     stmt = insert(threads).values(
         whatsapp_number=request.whatsapp_number,
-        thread_id=request.thread_id
+        external_thread_id=request.external_thread_id  # Alterado
     )
     db.execute(stmt)
     db.commit()
     
-    return {"message": "Thread created successfully", "thread_id": request.thread_id}
+    return {"message": "Thread created successfully", "external_thread_id": request.external_thread_id}
 
 @router.get("/check-thread/{whatsapp_number}")
 def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
@@ -34,6 +34,6 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     thread = db.scalar(query)
     
     if thread:
-        return {"exists": True, "thread_id": thread.thread_id}
+        return {"exists": True, "external_thread_id": thread.external_thread_id}  # Alterado
     
     return {"exists": False}
