@@ -1,31 +1,29 @@
+from sqlalchemy.orm import Session
 from .models import threads
-from .database import database
 import re
+from sqlalchemy import insert, select
 
-async def get_thread_by_number(whatsapp_number: str):
+def clean_whatsapp_number(whatsapp_number: str) -> str:
+    """ Limpa e formata o número de WhatsApp, mantendo apenas o DDD e o número. """
+    cleaned_number = re.sub(r'\D', '', whatsapp_number)  # Remove caracteres não numéricos
 
-    cleaned_number = re.sub(r'\D', '', whatsapp_number)
-    
-    # Certifique-se de que o número tenha pelo menos o DDD e o número
     if len(cleaned_number) < 10:
         raise ValueError("Número de WhatsApp inválido")
-    
-    # Mantém apenas o DDD e o número
-    if len(cleaned_number) > 11:  # Caso inclua código do país (ex: +55)
-        cleaned_number = cleaned_number[-11:]
-    
-    query = threads.select().where(threads.c.whatsapp_number == cleaned_number)
-    return await database.fetch_one(query)
 
-async def create_thread(whatsapp_number: str):
-    cleaned_number = re.sub(r'\D', '', whatsapp_number)
-    
-    # Certifique-se de que o número tenha pelo menos o DDD e o número
-    if len(cleaned_number) < 10:
-        raise ValueError("Número de WhatsApp inválido")
-    
-    # Mantém apenas o DDD e o número
-    if len(cleaned_number) > 11:  # Caso inclua código do país (ex: +55)
+    if len(cleaned_number) > 11:  # Se incluir código do país (ex: +55)
         cleaned_number = cleaned_number[-11:]
-    query = threads.insert().values(whatsapp_number=cleaned_number)
-    return await database.execute(query)
+
+    return cleaned_number
+
+def get_thread_by_number(db: Session, whatsapp_number: str):
+    """ Busca uma thread pelo número do WhatsApp. """
+    cleaned_number = clean_whatsapp_number(whatsapp_number)
+    query = select(threads).where(threads.c.whatsapp_number == cleaned_number)
+    return db.execute(query).fetchone()  # ✅ Correção: usar `fetchone()` diretamente
+
+def create_thread(db: Session, whatsapp_number: str):
+    """ Cria uma nova thread no banco de dados. """
+    cleaned_number = clean_whatsapp_number(whatsapp_number)
+    stmt = insert(threads).values(whatsapp_number=cleaned_number)
+    db.execute(stmt)
+    db.commit()  # ✅ Correção: precisa de `commit()` para salvar as alterações no banco
