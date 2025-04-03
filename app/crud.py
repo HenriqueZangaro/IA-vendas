@@ -27,5 +27,5 @@ async def create_thread(whatsapp_number: str):
     # Mantém apenas o DDD e o número
     if len(cleaned_number) > 11:  # Caso inclua código do país (ex: +55)
         cleaned_number = cleaned_number[-11:]
-    query = threads.insert().values(whatsapp_number=whatsapp_number)
+    query = threads.insert().values(whatsapp_number=cleaned_number)
     return await database.execute(query)
