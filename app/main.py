@@ -25,6 +25,6 @@ async def read_thread(whatsapp_number: str):
 async def create_new_thread(whatsapp_number: str):
     thread = await get_thread_by_number(whatsapp_number)
     if thread:
-        raise HTTPException(status_code=400, detail="Thread already exists")
+        return {"message": "Thread already exist"}
     await create_thread(whatsapp_number)
     return {"message": "Thread created successfully"}
