@@ -2,8 +2,12 @@ from fastapi import FastAPI, HTTPException
 from .database import engine, database
 from .models import metadata
 from .crud import get_thread_by_number, create_thread
+from fastapi import FastAPI
+from .routes import router
 
 app = FastAPI()
+
+app.include_router(router)
 
 @app.on_event("startup")
 async def startup():
