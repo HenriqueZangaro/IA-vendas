@@ -9,13 +9,13 @@ app = FastAPI()
 
 class ThreadCreateRequest(BaseModel):
     whatsapp_number: str
-    thread_id: str
+    thread_id: str  # ✅ Agora está alinhado com o modelo
 
 @app.post("/create-thread/")
 def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
     # Verifica se já existe uma thread para o número
     query = select(threads).where(threads.c.whatsapp_number == request.whatsapp_number)
-    existing_thread = db.execute(query).fetchone()
+    existing_thread = db.scalar(query)  # ✅ Correção: usar scalar() em vez de fetchone()
     
     if existing_thread:
         raise HTTPException(status_code=400, detail="Thread already exists for this phone number.")
@@ -23,7 +23,7 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
     # Insere uma nova thread
     stmt = insert(threads).values(
         whatsapp_number=request.whatsapp_number,
-        thread_id=request.thread_id
+        thread_id=request.thread_id  # ✅ thread_id agora está no modelo correto
     )
     db.execute(stmt)
     db.commit()
@@ -33,7 +33,7 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
 @app.get("/check-thread/{whatsapp_number}")
 def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
-    thread = db.execute(query).fetchone()
+    thread = db.scalar(query)  # ✅ Correção: usar scalar()
     
     if thread:
         return {"exists": True, "thread_id": thread.thread_id}
