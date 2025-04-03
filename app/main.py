@@ -33,17 +33,22 @@ async def shutdown():
 
 # ✅ Rota para buscar uma thread por número de WhatsApp
 @app.get("/threads/{whatsapp_number}")
-async def read_thread(whatsapp_number: str, db: Session = Depends(get_db)):
+def read_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     thread = get_thread_by_number(db, whatsapp_number)
     if thread:
-        return thread
+        return {"exists": True, "thread": thread}
     raise HTTPException(status_code=404, detail="Thread not found")
 
 # ✅ Rota para criar uma nova thread se não existir
 @app.post("/threads/")
-async def create_new_thread(whatsapp_number: str, db: Session = Depends(get_db)):
-    thread = get_thread_by_number(db, whatsapp_number)
-    if thread:
-        return thread
-    create_thread(db, whatsapp_number)
-    return {"message": "Thread created successfully"}
+def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depends(get_db)):
+    try:
+        thread = get_thread_by_number(db, whatsapp_number)
+        if thread:
+            return {"message": "Thread already exists", "thread": thread}
+        
+        create_thread(db, whatsapp_number, thread_id)
+        return {"message": "Thread created successfully", "whatsapp_number": whatsapp_number, "thread_id": thread_id}
+    except Exception as e:
+        print(f"❌ Erro ao criar thread: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
