@@ -23,8 +23,11 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         existing_thread = db.execute(query).fetchone()
 
         if existing_thread:
-            # Acessar diretamente as colunas do Row
-            existing_thread_dict = {column: existing_thread[column] for column in threads.columns.keys()}
+            # Acessar os dados da tupla com índices numéricos
+            existing_thread_dict = {
+                "whatsapp_number": existing_thread[0],
+                "external_thread_id": existing_thread[1]
+            }
             return {"message": "Thread already exists", "thread": existing_thread_dict}
 
         # Caso não exista, cria uma nova thread
@@ -38,8 +41,11 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         # Retorna a thread recém-criada
         new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
 
-        # Acessar diretamente as colunas do Row para a nova thread
-        new_thread_dict = {column: new_thread[column] for column in threads.columns.keys()}
+        # Acessar os dados da tupla com índices numéricos
+        new_thread_dict = {
+            "whatsapp_number": new_thread[0],
+            "external_thread_id": new_thread[1]
+        }
         return {"message": "Thread created successfully", "thread": new_thread_dict}
 
     except Exception as e:
@@ -59,8 +65,11 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         thread = db.execute(query).fetchone()
 
         if thread:
-            # Acessar diretamente as colunas do Row
-            thread_dict = {column: thread[column] for column in threads.columns.keys()}
+            # Acessar os dados da tupla com índices numéricos
+            thread_dict = {
+                "whatsapp_number": thread[0],
+                "external_thread_id": thread[1]
+            }
             return {"exists": True, "thread": thread_dict}
         else:
             return {"exists": False}
