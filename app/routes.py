@@ -42,5 +42,5 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     if thread:
         # Retorna a thread completa (todos os dados da thread) se a thread existir
         return {"exists": True, "thread": dict(thread)}
-    
-    return {"exists": False}
+    else:
+        return {"exists": False}
