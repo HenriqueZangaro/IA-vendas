@@ -23,10 +23,10 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         existing_thread = db.execute(query).fetchone()
 
         if existing_thread:
-            # Acessar os dados da tupla com índices numéricos
+            # Corrigindo a ordem dos valores retornados
             existing_thread_dict = {
-                "whatsapp_number": existing_thread[0],
-                "external_thread_id": existing_thread[1]
+                "external_thread_id": existing_thread[0],  # O ID da thread
+                "whatsapp_number": existing_thread[1]      # O número do WhatsApp
             }
             return {"message": "Thread already exists", "thread": existing_thread_dict}
 
@@ -41,15 +41,14 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         # Retorna a thread recém-criada
         new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
 
-        # Acessar os dados da tupla com índices numéricos
+        # Corrigindo a ordem dos valores retornados
         new_thread_dict = {
-            "whatsapp_number": new_thread[0],
-            "external_thread_id": new_thread[1]
+            "external_thread_id": new_thread[0],  # O ID da thread
+            "whatsapp_number": new_thread[1]      # O número do WhatsApp
         }
         return {"message": "Thread created successfully", "thread": new_thread_dict}
 
     except Exception as e:
-        # Se ocorrer algum erro, capturamos a exceção e retornamos um erro 500 com a descrição
         print(f"Erro ao criar thread: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar thread: {str(e)}")
 
@@ -65,16 +64,15 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         thread = db.execute(query).fetchone()
 
         if thread:
-            # Acessar os dados da tupla com índices numéricos
+            # Corrigindo a ordem dos valores retornados
             thread_dict = {
-                "whatsapp_number": thread[0],
-                "external_thread_id": thread[1]
+                "external_thread_id": thread[0],  # O ID da thread
+                "whatsapp_number": thread[1]      # O número do WhatsApp
             }
             return {"exists": True, "thread": thread_dict}
         else:
             return {"exists": False}
 
     except Exception as e:
-        # Captura qualquer exceção inesperada
         print(f"Erro ao verificar a thread: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao verificar a thread: {str(e)}")
