@@ -66,7 +66,7 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         if thread:
             # Corrigindo a ordem dos valores retornados
             thread_dict = {
-                "external_thread_id": thread[0],  # O ID da thread
+                "thread_id": thread[0],  # O ID da thread
                 "whatsapp_number": thread[1]      # O número do WhatsApp
             }
             return {"exists": True, "thread": thread_dict}
