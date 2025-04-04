@@ -23,8 +23,8 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         existing_thread = db.execute(query).fetchone()
 
         if existing_thread:
-            # Acessar diretamente os valores das colunas
-            existing_thread_dict = {column: existing_thread[column] for column in existing_thread.keys()}
+            # Acessar diretamente as colunas do Row
+            existing_thread_dict = {column: existing_thread[column] for column in threads.columns.keys()}
             return {"message": "Thread already exists", "thread": existing_thread_dict}
 
         # Caso não exista, cria uma nova thread
@@ -38,8 +38,8 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         # Retorna a thread recém-criada
         new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
 
-        # Acessar diretamente os valores das colunas para a nova thread
-        new_thread_dict = {column: new_thread[column] for column in new_thread.keys()}
+        # Acessar diretamente as colunas do Row para a nova thread
+        new_thread_dict = {column: new_thread[column] for column in threads.columns.keys()}
         return {"message": "Thread created successfully", "thread": new_thread_dict}
 
     except Exception as e:
@@ -59,8 +59,8 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         thread = db.execute(query).fetchone()
 
         if thread:
-            # Acessar diretamente os valores das colunas
-            thread_dict = {column: thread[column] for column in thread.keys()}
+            # Acessar diretamente as colunas do Row
+            thread_dict = {column: thread[column] for column in threads.columns.keys()}
             return {"exists": True, "thread": thread_dict}
         else:
             return {"exists": False}
