@@ -13,42 +13,59 @@ class ThreadCreateRequest(BaseModel):
 
 @router.post("/create-thread/")
 def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
-    # Garantir que o whatsapp_number não tenha espaços extras
-    whatsapp_number = request.whatsapp_number.strip()
-    print(f"Verificando a thread para o número: {whatsapp_number}")
+    try:
+        # Garantir que o whatsapp_number não tenha espaços extras
+        whatsapp_number = request.whatsapp_number.strip()
+        print(f"Verificando a thread para o número: {whatsapp_number}")
 
-    # Verificar se já existe uma thread com o número de whatsapp informado
-    query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
-    existing_thread = db.execute(query).fetchone()
+        # Verificar se já existe uma thread com o número de whatsapp informado
+        query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
+        existing_thread = db.execute(query).fetchone()
 
-    if existing_thread:
-        # Retorna a thread completa (todos os dados da thread) se já existir
-        return {"message": "Thread already exists", "thread": dict(existing_thread)}
+        if existing_thread:
+            # Acessar diretamente os valores das colunas
+            existing_thread_dict = {column: existing_thread[column] for column in existing_thread.keys()}
+            return {"message": "Thread already exists", "thread": existing_thread_dict}
 
-    # Caso não exista, cria uma nova thread
-    stmt = insert(threads).values(
-        whatsapp_number=whatsapp_number,  # Removendo espaços extras
-        external_thread_id=request.external_thread_id.strip()  # Garantindo consistência
-    )
-    db.execute(stmt)
-    db.commit()
+        # Caso não exista, cria uma nova thread
+        stmt = insert(threads).values(
+            whatsapp_number=whatsapp_number,  # Removendo espaços extras
+            external_thread_id=request.external_thread_id.strip()  # Garantindo consistência
+        )
+        db.execute(stmt)
+        db.commit()
 
-    # Retorna a thread recém-criada
-    new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
-    return {"message": "Thread created successfully", "thread": dict(new_thread)}
+        # Retorna a thread recém-criada
+        new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
+
+        # Acessar diretamente os valores das colunas para a nova thread
+        new_thread_dict = {column: new_thread[column] for column in new_thread.keys()}
+        return {"message": "Thread created successfully", "thread": new_thread_dict}
+
+    except Exception as e:
+        # Se ocorrer algum erro, capturamos a exceção e retornamos um erro 500 com a descrição
+        print(f"Erro ao criar thread: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao criar thread: {str(e)}")
 
 @router.get("/check-thread/{whatsapp_number}")
 def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
-    # Garantir que o whatsapp_number não tenha espaços extras
-    whatsapp_number = whatsapp_number.strip()
-    print(f"Verificando a thread para o número: {whatsapp_number}")
+    try:
+        # Garantir que o whatsapp_number não tenha espaços extras
+        whatsapp_number = whatsapp_number.strip()
+        print(f"Verificando a thread para o número: {whatsapp_number}")
 
-    # Verificar se já existe uma thread com o número de whatsapp informado
-    query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
-    thread = db.execute(query).fetchone()
+        # Verificar se já existe uma thread com o número de whatsapp informado
+        query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
+        thread = db.execute(query).fetchone()
 
-    if thread:
-        # Retorna a thread completa (todos os dados da thread) se a thread existir
-        return {"exists": True, "thread": dict(thread)}
-    else:
-        return {"exists": False}
+        if thread:
+            # Acessar diretamente os valores das colunas
+            thread_dict = {column: thread[column] for column in thread.keys()}
+            return {"exists": True, "thread": thread_dict}
+        else:
+            return {"exists": False}
+
+    except Exception as e:
+        # Captura qualquer exceção inesperada
+        print(f"Erro ao verificar a thread: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao verificar a thread: {str(e)}")
