@@ -13,12 +13,15 @@ class ThreadCreateRequest(BaseModel):
 
 @router.post("/create-thread/")
 def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
+    # Verificar se já existe uma thread com o número de whatsapp informado
     query = select(threads).where(threads.c.whatsapp_number == request.whatsapp_number)
-    existing_thread = db.scalar(query)
+    existing_thread = db.execute(query).fetchone()
     
     if existing_thread:
-        raise HTTPException(status_code=400, detail="Thread already exists for this phone number.")
+        # Retorna a thread completa (todos os dados da thread) se já existir
+        return {"message": "Thread already exists", "thread": dict(existing_thread)}
     
+    # Caso não exista, cria uma nova thread
     stmt = insert(threads).values(
         whatsapp_number=request.whatsapp_number.strip(),  # Removendo espaços extras
         external_thread_id=request.external_thread_id.strip()  # Garantindo consistência
@@ -26,14 +29,18 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
     db.execute(stmt)
     db.commit()
     
-    return {"message": "Thread created successfully", "external_thread_id": request.external_thread_id}
+    # Retorna a thread recém-criada
+    new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == request.whatsapp_number)).fetchone()
+    return {"message": "Thread created successfully", "thread": dict(new_thread)}
 
 @router.get("/check-thread/{whatsapp_number}")
 def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
+    # Verificar se já existe uma thread com o número de whatsapp informado
     query = select(threads).where(threads.c.whatsapp_number == whatsapp_number.strip())
-    thread = db.scalar(query)
+    thread = db.execute(query).fetchone()
     
     if thread:
-        return {"exists": True, "external_thread_id": thread.external_thread_id}
+        # Retorna a thread completa (todos os dados da thread) se a thread existir
+        return {"exists": True, "thread": dict(thread)}
     
     return {"exists": False}
