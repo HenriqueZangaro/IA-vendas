@@ -25,7 +25,7 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         if existing_thread:
             # Corrigindo a ordem dos valores retornados
             existing_thread_dict = {
-                "external_thread_id": existing_thread[0],  # O ID da thread
+                "thread_id": existing_thread[0],  # O ID da thread
                 "whatsapp_number": existing_thread[1]      # O número do WhatsApp
             }
             return {"message": "Thread already exists", "thread": existing_thread_dict}
@@ -43,7 +43,7 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
 
         # Corrigindo a ordem dos valores retornados
         new_thread_dict = {
-            "external_thread_id": new_thread[0],  # O ID da thread
+            "thread_id": new_thread[0],  # O ID da thread
             "whatsapp_number": new_thread[1]      # O número do WhatsApp
         }
         return {"message": "Thread created successfully", "thread": new_thread_dict}
