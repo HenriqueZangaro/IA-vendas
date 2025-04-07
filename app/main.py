@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .database import engine, database, get_db
-from .models import metadata
+from .database import engine, get_db  # Corrigido para remover 'database' importado
+from .models_base import Base  # Importando Base de models_base.py
 from .routes import router
-from .crud import get_conversation_by_thread_id, update_conversation_status
+from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread
 
 app = FastAPI()
 
@@ -15,21 +15,20 @@ app.include_router(router)
 async def startup():
     try:
         print("🔄 Criando tabelas no banco de dados...")
-        metadata.create_all(engine)
-        await database.connect()
+        Base.metadata.create_all(engine)  # Usando Base.metadata agora
         print("✅ Banco de dados conectado!")
     except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
+        print(f"❌ Erro ao criar as tabelas ou conectar ao banco: {e}")
 
 # ✅ Desconectar do banco ao desligar a API
 @app.on_event("shutdown")
 async def shutdown():
     try:
-        print("🛑 Desconectando do banco de dados...")
-        await database.disconnect()
-        print("✅ Banco de dados desconectado!")
+        print("🛑 Encerrando a aplicação...")
+        # Não é mais necessário desconectar explicitamente, já que o SQLAlchemy gerencia isso automaticamente
+        print("✅ Banco de dados desconectado (gerenciado pelo SQLAlchemy).")
     except Exception as e:
-        print(f"❌ Erro ao desconectar do banco: {e}")
+        print(f"❌ Erro ao finalizar a aplicação: {e}")
 
 # ✅ Rota para buscar uma thread por número de WhatsApp
 @app.get("/threads/{whatsapp_number}")
