@@ -1,8 +1,8 @@
+import re  # Importando o módulo 're' para usar expressões regulares
 from sqlalchemy.orm import Session
-from .models import Thread, Conversation  # Importando as classes ORM
+from .models import Thread, Conversation  # Importando as classes ORM corretamente
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
-import re
 
 def clean_whatsapp_number(whatsapp_number: str) -> str:
     """ Limpa e formata o número de WhatsApp, mantendo apenas o DDD e o número. """
