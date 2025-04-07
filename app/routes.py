@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import insert, select
 from .database import get_db
-from .models import threads
+from .models import threads, conversations  # Adicionamos a tabela 'conversations'
 from pydantic import BaseModel
+from .crud import get_conversation_by_thread_id, update_conversation_status  # Funções de CRUD
 
 router = APIRouter()
 
@@ -11,6 +12,7 @@ class ThreadCreateRequest(BaseModel):
     whatsapp_number: str
     external_thread_id: str  # Mantendo coerente com a nova coluna no banco
 
+# Endpoint para criar uma nova thread
 @router.post("/create-thread/")
 def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
     try:
@@ -52,6 +54,7 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         print(f"Erro ao criar thread: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar thread: {str(e)}")
 
+# Endpoint para verificar a existência de uma thread
 @router.get("/check-thread/{whatsapp_number}")
 def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     try:
@@ -76,3 +79,33 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Erro ao verificar a thread: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao verificar a thread: {str(e)}")
+
+# Novo endpoint para recuperar a conversa existente usando thread_id
+@router.get("/threads/{thread_id}/conversation")
+def get_conversation(thread_id: str, db: Session = Depends(get_db)):
+    try:
+        # Recupera o histórico da conversa associada ao thread_id
+        conversation = get_conversation_by_thread_id(db, thread_id)
+        
+        if conversation:
+            return {"exists": True, "conversation": conversation}
+        else:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+    except Exception as e:
+        print(f"Erro ao recuperar a conversa: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {str(e)}")
+
+# Novo endpoint para atualizar o status da conversa
+@router.put("/threads/{thread_id}/status")
+def update_conversation(thread_id: str, status: str, db: Session = Depends(get_db)):
+    try:
+        # Atualiza o status da conversa associada ao thread_id
+        updated_conversation = update_conversation_status(db, thread_id, status)
+        
+        if updated_conversation:
+            return {"message": f"Status updated to {status} for thread_id {thread_id}"}
+        else:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+    except Exception as e:
+        print(f"Erro ao atualizar status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {str(e)}")
