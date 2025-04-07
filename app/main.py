@@ -6,6 +6,7 @@ from .models_base import Base
 from .routes import router
 from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread
 import logging
+from sqlalchemy import inspect
 
 # Configuração do logging para DEBUG
 logging.basicConfig(level=logging.DEBUG)
@@ -17,26 +18,34 @@ app = FastAPI()
 app.include_router(router)
 
 # Criar tabelas no banco ao iniciar a API
+
+
 @app.on_event("startup")
 async def startup():
     try:
         print("🔄 Criando tabelas no banco de dados...")
         
-        # Log detalhado dos modelos e suas colunas
-        print("Tabelas a serem criadas:")
-        for table_name, table in Base.metadata.tables.items():
-            print(f"\n - {table_name}")
-            for column in table.columns:
-                print(f"   * {column.name}: {column.type}")
-        
+        # Criar tabelas
         Base.metadata.create_all(engine)
+        
+        # Verificação detalhada
+        inspector = inspect(engine)
+        print("\n🔍 Verificação detalhada das tabelas:")
+        for table_name in Base.metadata.tables.keys():
+            print(f"\nTabela: {table_name}")
+            columns = inspector.get_columns(table_name)
+            for column in columns:
+                print(f"  - {column['name']}: {column['type']}")
+        
         print("✅ Banco de dados conectado!")
+    
     except Exception as e:
         print(f"❌ Erro detalhado ao criar as tabelas: {e}")
         import traceback
         traceback.print_exc()
         logger.error(f"Erro ao iniciar a aplicação: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
+
 
 # Desconectar do banco ao desligar a API
 @app.on_event("shutdown")

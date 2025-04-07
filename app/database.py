@@ -2,6 +2,7 @@ from .models_base import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import logging
+from sqlalchemy import inspect
 
 # Configuração de log
 logging.basicConfig(level=logging.DEBUG)
@@ -20,17 +21,33 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def create_tables():
     try:
-        print("Tabelas a serem criadas:")
-        for table in Base.metadata.tables:
-            print(f" - {table}")
+        print("🔍 Detalhes da criação de tabelas:")
         
+        # Verifica se as tabelas já existem
+        existing_tables = Base.metadata.tables.keys()
+        print(f"Tabelas definidas no modelo: {list(existing_tables)}")
+        
+        # Tenta criar as tabelas
         Base.metadata.create_all(bind=engine)
-        print("✅ Tabelas criadas com sucesso!")
+        
+        # Confirmação de criação
+        print("✅ Processo de criação de tabelas concluído.")
+        
+        # Verifica novamente as tabelas
+        with engine.connect() as connection:
+            inspector = inspect(engine)
+            for table_name in existing_tables:
+                columns = inspector.get_columns(table_name)
+                print(f"\nTabela: {table_name}")
+                for column in columns:
+                    print(f"  - {column['name']}: {column['type']}")
+    
     except Exception as e:
-        print(f"❌ Erro ao criar tabelas: {e}")
+        print(f"❌ Erro detalhado ao criar tabelas: {e}")
         import traceback
         traceback.print_exc()
         logger.error(f"Erro ao criar tabelas: {e}")
+
 
 def get_db():
     db = SessionLocal()
