@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base  # Importando o Base para usar a classe ORM
+from .database import Base  # Base já está importado do database.py
 
 # Classe de "Thread" para armazenar as threads (conversas)
 class Thread(Base):
