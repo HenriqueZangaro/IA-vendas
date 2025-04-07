@@ -5,6 +5,10 @@ from .models import Thread, Conversation  # Certifique-se de que Thread e Conver
 from .models_base import Base  # Importando Base de models_base.py
 from .routes import router
 from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread
+import logging
+
+# Configuração do logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
 
@@ -22,7 +26,6 @@ async def startup():
         print(f"❌ Erro ao criar as tabelas ou conectar ao banco: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
 
-
 # ✅ Desconectar do banco ao desligar a API
 @app.on_event("shutdown")
 async def shutdown():
@@ -34,7 +37,7 @@ async def shutdown():
         print(f"❌ Erro ao finalizar a aplicação: {e}")
 
 # ✅ Rota para buscar uma thread por número de WhatsApp
-@app.get("/threads/{whatsapp_number}")
+@app.get("/threads/{whatsapp_number}", operation_id="get_thread_by_whatsapp_number")
 def read_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     thread = get_thread_by_number(db, whatsapp_number)
     if thread:
@@ -42,7 +45,7 @@ def read_thread(whatsapp_number: str, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Thread not found")
 
 # ✅ Rota para criar uma nova thread se não existir
-@app.post("/threads/")
+@app.post("/threads/", operation_id="create_thread")
 def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depends(get_db)):
     try:
         # Garantir que o whatsapp_number não tenha espaços extras
@@ -62,7 +65,7 @@ def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depend
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # ✅ Novo endpoint para recuperar a conversa existente usando thread_id
-@app.get("/threads/{thread_id}/conversation")
+@app.get("/threads/{thread_id}/conversation", operation_id="get_conversation_by_thread_id")
 def get_conversation(thread_id: str, db: Session = Depends(get_db)):
     try:
         # Certifique-se de que o thread_id é válido
@@ -82,7 +85,7 @@ def get_conversation(thread_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {e}")
 
 # ✅ Novo endpoint para atualizar o status da conversa
-@app.put("/threads/{thread_id}/status")
+@app.put("/threads/{thread_id}/status", operation_id="update_conversation_status")
 def update_conversation(thread_id: str, status: str, db: Session = Depends(get_db)):
     try:
         # Verificar se o thread_id existe
