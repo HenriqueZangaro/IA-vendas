@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import insert, select
 from .database import get_db
-from .models import threads, conversations  # Adicionamos a tabela 'conversations'
+from .models import Thread, Conversation  # Alterado para importar as classes ORM
 from pydantic import BaseModel
-from .crud import get_conversation_by_thread_id, update_conversation_status  # Funções de CRUD
+from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread  # Funções de CRUD
 
 router = APIRouter()
 
@@ -21,34 +21,22 @@ def create_thread(request: ThreadCreateRequest, db: Session = Depends(get_db)):
         print(f"Verificando a thread para o número: {whatsapp_number}")
 
         # Verificar se já existe uma thread com o número de whatsapp informado
-        query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
-        existing_thread = db.execute(query).fetchone()
+        thread = db.query(Thread).filter(Thread.whatsapp_number == whatsapp_number).first()
 
-        if existing_thread:
-            # Corrigindo a ordem dos valores retornados
-            existing_thread_dict = {
-                "thread_id": existing_thread[0],  # O ID da thread
-                "whatsapp_number": existing_thread[1]      # O número do WhatsApp
-            }
-            return {"message": "Thread already exists", "thread": existing_thread_dict}
+        if thread:
+            return {"message": "Thread already exists", "thread": {"thread_id": thread.thread_id, "whatsapp_number": thread.whatsapp_number}}
 
         # Caso não exista, cria uma nova thread
-        stmt = insert(threads).values(
-            whatsapp_number=whatsapp_number,  # Removendo espaços extras
-            external_thread_id=request.external_thread_id.strip()  # Garantindo consistência
+        new_thread = Thread(
+            whatsapp_number=whatsapp_number,
+            external_thread_id=request.external_thread_id.strip()
         )
-        db.execute(stmt)
+        db.add(new_thread)
         db.commit()
 
         # Retorna a thread recém-criada
-        new_thread = db.execute(select(threads).where(threads.c.whatsapp_number == whatsapp_number)).fetchone()
-
-        # Corrigindo a ordem dos valores retornados
-        new_thread_dict = {
-            "thread_id": new_thread[0],  # O ID da thread
-            "whatsapp_number": new_thread[1]      # O número do WhatsApp
-        }
-        return {"message": "Thread created successfully", "thread": new_thread_dict}
+        db.refresh(new_thread)  # Atualiza a instância com os dados do banco, incluindo o ID gerado
+        return {"message": "Thread created successfully", "thread": {"thread_id": new_thread.thread_id, "whatsapp_number": new_thread.whatsapp_number}}
 
     except Exception as e:
         print(f"Erro ao criar thread: {str(e)}")
@@ -63,16 +51,10 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         print(f"Verificando a thread para o número: {whatsapp_number}")
 
         # Verificar se já existe uma thread com o número de whatsapp informado
-        query = select(threads).where(threads.c.whatsapp_number == whatsapp_number)
-        thread = db.execute(query).fetchone()
+        thread = db.query(Thread).filter(Thread.whatsapp_number == whatsapp_number).first()
 
         if thread:
-            # Corrigindo a ordem dos valores retornados
-            thread_dict = {
-                "thread_id": thread[0],  # O ID da thread
-                "whatsapp_number": thread[1]      # O número do WhatsApp
-            }
-            return {"exists": True, "thread": thread_dict}
+            return {"exists": True, "thread": {"thread_id": thread.thread_id, "whatsapp_number": thread.whatsapp_number}}
         else:
             return {"exists": False}
 
