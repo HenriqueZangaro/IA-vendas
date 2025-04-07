@@ -1,6 +1,6 @@
+from .models_base import Base  # Agora importando Base de models_base.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models import Base  # Importando o Base diretamente de models.py
 
 DATABASE_URL = "postgresql://user:password@localhost/dbname"
 
