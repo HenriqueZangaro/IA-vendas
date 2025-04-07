@@ -7,7 +7,7 @@ from .routes import router
 from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread
 import logging
 
-# Configuração do logging
+# Configuração do logging para DEBUG
 logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
@@ -24,6 +24,7 @@ async def startup():
         print("✅ Banco de dados conectado!")
     except Exception as e:
         print(f"❌ Erro ao criar as tabelas ou conectar ao banco: {e}")
+        logging.error(f"Erro ao iniciar a aplicação: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
 
 # ✅ Desconectar do banco ao desligar a API
@@ -35,6 +36,7 @@ async def shutdown():
         print("✅ Banco de dados desconectado (gerenciado pelo SQLAlchemy).")
     except Exception as e:
         print(f"❌ Erro ao finalizar a aplicação: {e}")
+        logging.error(f"Erro ao finalizar a aplicação: {e}")
 
 # ✅ Rota para buscar uma thread por número de WhatsApp
 @app.get("/threads/{whatsapp_number}", operation_id="get_thread_by_whatsapp_number")
@@ -62,6 +64,7 @@ def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depend
         return {"message": "Thread created successfully", "whatsapp_number": whatsapp_number, "thread_id": thread_id}
     except Exception as e:
         print(f"❌ Erro ao criar thread: {e}")
+        logging.error(f"Erro ao criar thread: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # ✅ Novo endpoint para recuperar a conversa existente usando thread_id
@@ -82,6 +85,7 @@ def get_conversation(thread_id: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail=f"Conversation for thread_id {thread_id} not found")
     except Exception as e:
         print(f"❌ Erro ao recuperar a conversa: {e}")
+        logging.error(f"Erro ao recuperar a conversa: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {e}")
 
 # ✅ Novo endpoint para atualizar o status da conversa
@@ -102,4 +106,5 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
             raise HTTPException(status_code=500, detail="Error updating status")
     except Exception as e:
         print(f"❌ Erro ao atualizar status: {e}")
+        logging.error(f"Erro ao atualizar status: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {e}")
