@@ -20,6 +20,8 @@ async def startup():
         print("✅ Banco de dados conectado!")
     except Exception as e:
         print(f"❌ Erro ao criar as tabelas ou conectar ao banco: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
+
 
 # ✅ Desconectar do banco ao desligar a API
 @app.on_event("shutdown")
