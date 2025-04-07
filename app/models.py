@@ -1,35 +1,9 @@
-from sqlalchemy import Table, Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base, metadata
+from .database import Base  # Importando o Base para usar a classe ORM
 
-# Tabela para armazenar as threads (conversas)
-threads = Table(
-    "threads",
-    metadata,
-    Column("thread_id", Integer, primary_key=True, index=True),  # Renomeado de "id"
-    Column("whatsapp_number", String(15), unique=True, nullable=False, index=True),
-    Column("external_thread_id", Text, nullable=False),  # Renomeado para evitar confusão
-    Column("created_at", DateTime, default=func.now(), nullable=False),
-    Column("updated_at", DateTime, default=func.now(), onupdate=func.now(), nullable=False),
-)
-
-# Tabela para armazenar as conversas associadas a uma thread
-class Conversation(Base):
-    __tablename__ = "conversations"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    thread_id = Column(Integer, ForeignKey("threads.thread_id"), nullable=False)  # Relacionamento com a tabela threads
-    status = Column(String, default="iniciado")  # Status da conversa, como "iniciado", "aguardando pagamento", etc.
-    messages = Column(Text)  # Armazena o histórico das mensagens em texto
-    
-    # Relacionamento com a tabela threads
-    thread = relationship("Thread", backref="conversation", uselist=False)
-
-    def __repr__(self):
-        return f"<Conversation(thread_id={self.thread_id}, status={self.status})>"
-
-# Classe de "Thread" para garantir o relacionamento
+# Classe de "Thread" para armazenar as threads (conversas)
 class Thread(Base):
     __tablename__ = "threads"
     
@@ -39,8 +13,23 @@ class Thread(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     
-    # Relacionamento com as conversas
+    # Relacionamento com a tabela Conversation
     conversations = relationship("Conversation", back_populates="thread")
 
     def __repr__(self):
         return f"<Thread(thread_id={self.thread_id}, whatsapp_number={self.whatsapp_number})>"
+
+# Classe de "Conversation" para armazenar as conversas associadas a uma thread
+class Conversation(Base):
+    __tablename__ = "conversations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, ForeignKey("threads.thread_id"), nullable=False)  # Relacionamento com a tabela threads
+    status = Column(String, default="iniciado")  # Status da conversa, como "iniciado", "aguardando pagamento", etc.
+    messages = Column(Text)  # Armazena o histórico das mensagens em texto
+    
+    # Relacionamento com a tabela Thread
+    thread = relationship("Thread", back_populates="conversations")
+
+    def __repr__(self):
+        return f"<Conversation(thread_id={self.thread_id}, status={self.status})>"
