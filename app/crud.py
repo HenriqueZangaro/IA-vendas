@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from .models import Thread, Conversation  # Importando as classes, não mais as tabelas
+from .models import Thread, Conversation  # Importando as classes ORM
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
 import re
