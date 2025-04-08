@@ -110,7 +110,7 @@ def get_conversation(thread_id: str, db: Session = Depends(get_db)):
         logger.error(f"Erro ao recuperar a conversa: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {e}")
 
-# Novo endpoint para atualizar o status da conversa
+# Novo endpoint para atualizar o status da última conversa
 @app.put("/threads/{thread_id}/status", operation_id="update_conversation_status")
 def update_conversation(thread_id: str, status: str, db: Session = Depends(get_db)):
     try:
@@ -119,7 +119,7 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Recupera a última conversa associada ao thread_id
+        # Recupera a última conversa associada ao thread_id (maior ID)
         last_conversation = (
             db.query(Conversation)
             .filter(Conversation.thread_id == int(thread_id))
@@ -132,7 +132,6 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         # Atualiza o status da última conversa
         last_conversation.status = status
         db.commit()  # Commit the change
-        
         return {"message": f"Status updated to '{status}' for the last conversation with thread_id {thread_id}"}
     except Exception as e:
         logger.error(f"Erro ao atualizar status: {e}")
