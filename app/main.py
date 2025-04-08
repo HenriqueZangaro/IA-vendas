@@ -119,17 +119,21 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Atualiza o status de todas as conversas associadas ao thread_id
-        conversations = db.query(Conversation).filter(Conversation.thread_id == int(thread_id)).all()
-        if not conversations:
+        # Recupera a última conversa associada ao thread_id
+        last_conversation = (
+            db.query(Conversation)
+            .filter(Conversation.thread_id == int(thread_id))
+            .order_by(Conversation.id.desc())  # Ordena por ID em ordem decrescente
+            .first()
+        )
+        if not last_conversation:
             raise HTTPException(status_code=404, detail="No conversations found for the given thread_id")
         
-        # Atualiza o status de todas as conversas
-        for conversation in conversations:
-            conversation.status = status
+        # Atualiza o status da última conversa
+        last_conversation.status = status
+        db.commit()  # Commit the change
         
-        db.commit()  # Commit all changes at once
-        return {"message": f"Status updated to '{status}' for all conversations with thread_id {thread_id}"}
+        return {"message": f"Status updated to '{status}' for the last conversation with thread_id {thread_id}"}
     except Exception as e:
         logger.error(f"Erro ao atualizar status: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {e}")
