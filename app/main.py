@@ -18,16 +18,12 @@ app = FastAPI()
 app.include_router(router)
 
 # Criar tabelas no banco ao iniciar a API
-
-
 @app.on_event("startup")
 async def startup():
     try:
         print("🔄 Criando tabelas no banco de dados...")
-        
         # Criar tabelas
         Base.metadata.create_all(engine)
-        
         # Verificação detalhada
         inspector = inspect(engine)
         print("\n🔍 Verificação detalhada das tabelas:")
@@ -35,17 +31,14 @@ async def startup():
             print(f"\nTabela: {table_name}")
             columns = inspector.get_columns(table_name)
             for column in columns:
-                print(f"  - {column['name']}: {column['type']}")
-        
+                print(f" - {column['name']}: {column['type']}")
         print("✅ Banco de dados conectado!")
-    
     except Exception as e:
         print(f"❌ Erro detalhado ao criar as tabelas: {e}")
         import traceback
         traceback.print_exc()
         logger.error(f"Erro ao iniciar a aplicação: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
-
 
 # Desconectar do banco ao desligar a API
 @app.on_event("shutdown")
@@ -84,6 +77,24 @@ def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depend
         logger.error(f"Erro ao criar thread: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+# Função para criar uma nova conversa
+def create_conversation(db: Session, thread_id: int, message: str):
+    new_conversation = Conversation(thread_id=thread_id, message=message)
+    db.add(new_conversation)
+    db.commit()
+    db.refresh(new_conversation)
+    return new_conversation
+
+# Novo endpoint para criar uma conversa
+@app.post("/threads/{thread_id}/conversation", operation_id="create_conversation")
+def create_conversation_endpoint(thread_id: str, message: str, db: Session = Depends(get_db)):
+    try:
+        conversation = create_conversation(db, int(thread_id), message)
+        return {"message": "Conversation created successfully", "conversation": conversation}
+    except Exception as e:
+        logger.error(f"Erro ao criar conversa: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 # Novo endpoint para recuperar a conversa existente usando thread_id
 @app.get("/threads/{thread_id}/conversation", operation_id="get_conversation_by_thread_id")
 def get_conversation(thread_id: str, db: Session = Depends(get_db)):
@@ -99,7 +110,6 @@ def get_conversation(thread_id: str, db: Session = Depends(get_db)):
         else:
             raise HTTPException(status_code=404, detail=f"Conversation for thread_id {thread_id} not found")
     except Exception as e:
-        print(f"❌ Erro ao recuperar a conversa: {e}")
         logger.error(f"Erro ao recuperar a conversa: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {e}")
 
@@ -118,6 +128,5 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         else:
             raise HTTPException(status_code=500, detail="Error updating status")
     except Exception as e:
-        print(f"❌ Erro ao atualizar status: {e}")
         logger.error(f"Erro ao atualizar status: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {e}")

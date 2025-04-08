@@ -1,37 +1,29 @@
 from sqlalchemy.orm import Session
 from .models import Thread, Conversation  # Importando as classes ORM
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, update
 import re
 
 def clean_whatsapp_number(whatsapp_number: str) -> str:
     """ Limpa e formata o número de WhatsApp, mantendo apenas o DDD e o número. """
     cleaned_number = re.sub(r'\D', '', whatsapp_number)  # Remove caracteres não numéricos
-
     if len(cleaned_number) < 10:
         raise ValueError("Número de WhatsApp inválido")
-
     if len(cleaned_number) > 11:  # Se incluir código do país (ex: +55)
         cleaned_number = cleaned_number[-11:]
-
     return cleaned_number
 
 def get_thread_by_number(db: Session, whatsapp_number: str):
     """ Busca uma thread pelo número do WhatsApp. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
-    
     # Usando ORM para consultar a tabela 'Thread'
     thread = db.query(Thread).filter(Thread.whatsapp_number == cleaned_number).first()
-    
     if thread:
         return {"thread_id": thread.thread_id, "whatsapp_number": thread.whatsapp_number, "external_thread_id": thread.external_thread_id}
-    
     return None
 
 def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
     """ Cria uma nova thread no banco de dados. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
-    
     # Verificar se o número de WhatsApp já existe antes de criar a thread
     existing_thread = db.query(Thread).filter(Thread.whatsapp_number == cleaned_number).first()
     if existing_thread:
@@ -42,7 +34,6 @@ def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
         whatsapp_number=cleaned_number,
         external_thread_id=external_thread_id
     )
-    
     db.add(new_thread)
     db.commit()  # Necessário para salvar a alteração no banco
     db.refresh(new_thread)  # Atualiza a instância com os dados do banco, incluindo o ID gerado
@@ -51,7 +42,6 @@ def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
 def get_conversation_by_thread_id(db: Session, thread_id: str):
     """ Recupera o histórico de conversa associado ao thread_id. """
     conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).first()
-    
     if conversation:
         return {"status": conversation.status, "messages": conversation.messages}
     return None
@@ -60,7 +50,6 @@ def create_conversation(db: Session, thread_id: str, status: str, messages: str)
     """ Cria uma nova conversa no banco de dados. """
     # Verificar se o thread_id existe na tabela 'threads'
     thread = db.query(Thread).filter(Thread.thread_id == thread_id).first()
-    
     if not thread:
         raise ValueError("Thread not found")
     
@@ -69,7 +58,6 @@ def create_conversation(db: Session, thread_id: str, status: str, messages: str)
         status=status,
         messages=messages  # Armazenando o histórico das mensagens
     )
-    
     try:
         db.add(new_conversation)
         db.commit()  # Commit para salvar a conversa no banco
@@ -84,13 +72,11 @@ def update_conversation_status(db: Session, thread_id: str, status: str):
     """ Atualiza o status da conversa para um determinado thread_id. """
     # Verificar se o thread_id existe na tabela 'threads'
     thread = db.query(Thread).filter(Thread.thread_id == thread_id).first()
-    
     if not thread:
         raise ValueError(f"No thread found for thread_id {thread_id}")
     
     # Usando ORM para atualizar o status da conversa
     conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).first()
-    
     if conversation:
         conversation.status = status
         db.commit()
