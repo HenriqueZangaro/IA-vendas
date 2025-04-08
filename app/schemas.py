@@ -1,32 +1,18 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel
+from typing import List
 
-class ThreadBase(BaseModel):
-    whatsapp_number: str = Field(..., min_length=1, max_length=20)
-    external_thread_id: Optional[str] = None
-
-class ThreadCreate(ThreadBase):
-    pass
-
-class ThreadResponse(ThreadBase):
+class MessageResponse(BaseModel):
+    id: int  # ID da mensagem
     thread_id: int
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    status: str
+    messages: str  # Conteúdo da mensagem
 
     class Config:
-        from_attributes = True
+        orm_mode = True  # Permite que o Pydantic converta objetos ORM em dicionários
 
-class ConversationBase(BaseModel):
+class ConversationResponse(BaseModel):
     thread_id: int
-    status: str = "iniciado"
-    messages: Optional[str] = None
-
-class ConversationCreate(ConversationBase):
-    pass
-
-class ConversationResponse(ConversationBase):
-    id: int
+    messages: List[MessageResponse]  # Lista de mensagens
 
     class Config:
-        from_attributes = True
+        orm_mode = True
