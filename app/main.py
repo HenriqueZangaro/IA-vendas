@@ -4,7 +4,7 @@ from .database import engine, get_db
 from .models import Thread, Conversation
 from .models_base import Base
 from .routes import router
-from .crud import get_conversation_by_thread_id, update_conversation_status, get_thread_by_number, create_thread
+from .crud import get_conversation_by_thread_id, get_thread_by_number, create_thread
 import logging
 from sqlalchemy import inspect
 
@@ -38,7 +38,6 @@ async def startup():
         import traceback
         traceback.print_exc()
         logger.error(f"Erro ao iniciar a aplicação: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao iniciar a aplicação: {e}")
 
 # Desconectar do banco ao desligar a API
 @app.on_event("shutdown")
@@ -78,8 +77,8 @@ def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depend
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Função para criar uma nova conversa
-def create_conversation(db: Session, thread_id: int, messages: str):  # Alterado para 'messages'
-    new_conversation = Conversation(thread_id=thread_id, messages=messages)  # Alterado para 'messages'
+def create_conversation(db: Session, thread_id: int, messages: str):
+    new_conversation = Conversation(thread_id=thread_id, messages=messages)
     db.add(new_conversation)
     db.commit()
     db.refresh(new_conversation)
@@ -87,9 +86,9 @@ def create_conversation(db: Session, thread_id: int, messages: str):  # Alterado
 
 # Novo endpoint para criar uma conversa
 @app.post("/threads/{thread_id}/conversation", operation_id="create_conversation")
-def create_conversation_endpoint(thread_id: str, messages: str, db: Session = Depends(get_db)):  # Alterado para 'messages'
+def create_conversation_endpoint(thread_id: str, messages: str, db: Session = Depends(get_db)):
     try:
-        conversation = create_conversation(db, int(thread_id), messages)  # Alterado para 'messages'
+        conversation = create_conversation(db, int(thread_id), messages)
         return {"message": "Conversation created successfully", "conversation": conversation}
     except Exception as e:
         logger.error(f"Erro ao criar conversa: {e}")
@@ -99,11 +98,9 @@ def create_conversation_endpoint(thread_id: str, messages: str, db: Session = De
 @app.get("/threads/{thread_id}/conversation", operation_id="get_conversation_by_thread_id")
 def get_conversation(thread_id: str, db: Session = Depends(get_db)):
     try:
-        # Certifique-se de que o thread_id é válido
         thread = db.query(Thread).filter(Thread.thread_id == int(thread_id)).first()
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
-        # Recupera o histórico da conversa associada ao thread_id
         conversation = get_conversation_by_thread_id(db, thread_id)
         if conversation:
             return {"exists": True, "conversation": conversation}
@@ -122,17 +119,17 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Atualiza o status de todas as conversas associadas ao thread_id em uma única operação
-        updated_rows = db.query(Conversation).filter(Conversation.thread_id == int(thread_id)).update(
-            {"status": status}, synchronize_session=False
-        )
-        
-        if updated_rows == 0:
+        # Atualiza o status de todas as conversas associadas ao thread_id
+        conversations = db.query(Conversation).filter(Conversation.thread_id == int(thread_id)).all()
+        if not conversations:
             raise HTTPException(status_code=404, detail="No conversations found for the given thread_id")
         
-        db.commit()  # Commit the bulk update
+        # Atualiza o status de todas as conversas
+        for conversation in conversations:
+            conversation.status = status
         
-        return {"message": f"Status updated to {status} for all conversations with thread_id {thread_id}"}
+        db.commit()  # Commit all changes at once
+        return {"message": f"Status updated to '{status}' for all conversations with thread_id {thread_id}"}
     except Exception as e:
         logger.error(f"Erro ao atualizar status: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {e}")
