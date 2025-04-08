@@ -122,16 +122,15 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Atualiza o status de todas as conversas associadas ao thread_id
-        conversations = db.query(Conversation).filter(Conversation.thread_id == int(thread_id)).all()
-        if not conversations:
+        # Atualiza o status de todas as conversas associadas ao thread_id em uma única operação
+        updated_rows = db.query(Conversation).filter(Conversation.thread_id == int(thread_id)).update(
+            {"status": status}, synchronize_session=False
+        )
+        
+        if updated_rows == 0:
             raise HTTPException(status_code=404, detail="No conversations found for the given thread_id")
         
-        for conversation in conversations:
-            conversation.status = status
-            db.add(conversation)  # Explicitly mark the conversation as updated
-        
-        db.commit()  # Commit all changes at once
+        db.commit()  # Commit the bulk update
         
         return {"message": f"Status updated to {status} for all conversations with thread_id {thread_id}"}
     except Exception as e:
