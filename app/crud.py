@@ -40,21 +40,20 @@ def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
     return new_thread
 
 def get_conversations_by_thread_id(db: Session, thread_id: str):
-    """ Recupera o histórico completo de conversas associadas ao thread_id. """
-    # Busca todas as conversas para o thread_id
-    conversations = db.query(Conversation).filter(Conversation.thread_id == thread_id).all()
+    """ Recupera apenas a última conversa associada ao thread_id. """
+    # Busca a última conversa para o thread_id, ordenando por id em ordem decrescente
+    conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).order_by(Conversation.id.desc()).first()
     
-    if conversations:
-        # Retorna todas as conversas
-        return [
-            {"status": conversation.status, "messages": conversation.messages}
-            for conversation in conversations
-        ]
+    if conversation:
+        # Retorna a última conversa
+        return {"status": conversation.status, "messages": conversation.messages}
     return None
 
+
 def get_conversation_by_thread_id(db: Session, thread_id: str):
-    """ Recupera o histórico completo de conversa associado ao thread_id. """
+    """ Recupera a última conversa associada ao thread_id. """
     return get_conversations_by_thread_id(db, thread_id)
+
 
 def create_conversation(db: Session, thread_id: str, status: str, messages: str):
     """ Cria uma nova conversa no banco de dados. """
