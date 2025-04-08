@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Thread, Conversation
 from .schemas import ThreadCreate, ThreadResponse, ConversationResponse, ConversationCreate  # Importando o esquema ConversationCreate
-from typing import Optional
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -66,16 +66,18 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         print(f"Erro ao verificar a thread: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao verificar a thread: {str(e)}")
 
-# Endpoint para recuperar conversa por thread_id
-@router.get("/threads/{thread_id}/conversation", response_model=Optional[ConversationResponse])
+# Endpoint para recuperar todas as mensagens de uma conversa por thread_id
+@router.get("/threads/{thread_id}/conversation", response_model=List[ConversationResponse])
 def get_conversation(thread_id: int, db: Session = Depends(get_db)):
     try:
-        # Recupera a conversa associada ao thread_id
-        conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).first()
-        if conversation:
-            return conversation
-        else:
-            raise HTTPException(status_code=404, detail="Conversation not found")
+        # Recupera todas as conversas associadas ao thread_id
+        conversations = db.query(Conversation).filter(Conversation.thread_id == thread_id).all()
+        
+        if not conversations:
+            raise HTTPException(status_code=404, detail="No conversations found for this thread_id")
+        
+        # Retorna todas as mensagens
+        return conversations  # Retorna a lista de conversas
     except Exception as e:
         print(f"Erro ao recuperar a conversa: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {str(e)}")
