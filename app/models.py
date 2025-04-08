@@ -41,4 +41,4 @@ class Conversation(Base):
     )
     
     def __repr__(self):
-        return f"<Conversation(id={self.id}, thread_id={self.thread_id}, status={self.status})>"  # Corrigido para usar self.id
+        return f"<Conversation(id={self.id}, thread_id={self.thread_id}, status={self.status})>"
