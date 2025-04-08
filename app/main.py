@@ -129,7 +129,9 @@ def update_conversation(thread_id: str, status: str, db: Session = Depends(get_d
         
         for conversation in conversations:
             conversation.status = status
-        db.commit()
+            db.add(conversation)  # Explicitly mark the conversation as updated
+        
+        db.commit()  # Commit all changes at once
         
         return {"message": f"Status updated to {status} for all conversations with thread_id {thread_id}"}
     except Exception as e:
