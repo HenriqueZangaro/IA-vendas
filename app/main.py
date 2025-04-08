@@ -78,8 +78,8 @@ def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depend
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Função para criar uma nova conversa
-def create_conversation(db: Session, thread_id: int, message: str):
-    new_conversation = Conversation(thread_id=thread_id, message=message)
+def create_conversation(db: Session, thread_id: int, messages: str):  # Alterado para 'messages'
+    new_conversation = Conversation(thread_id=thread_id, messages=messages)  # Alterado para 'messages'
     db.add(new_conversation)
     db.commit()
     db.refresh(new_conversation)
@@ -87,9 +87,9 @@ def create_conversation(db: Session, thread_id: int, message: str):
 
 # Novo endpoint para criar uma conversa
 @app.post("/threads/{thread_id}/conversation", operation_id="create_conversation")
-def create_conversation_endpoint(thread_id: str, message: str, db: Session = Depends(get_db)):
+def create_conversation_endpoint(thread_id: str, messages: str, db: Session = Depends(get_db)):  # Alterado para 'messages'
     try:
-        conversation = create_conversation(db, int(thread_id), message)
+        conversation = create_conversation(db, int(thread_id), messages)  # Alterado para 'messages'
         return {"message": "Conversation created successfully", "conversation": conversation}
     except Exception as e:
         logger.error(f"Erro ao criar conversa: {e}")
