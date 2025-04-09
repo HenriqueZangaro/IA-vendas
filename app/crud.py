@@ -44,7 +44,7 @@ def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
     return new_thread
 
 def get_conversations_by_external_thread_id(db: Session, external_thread_id: str):
-    """ Recupera apenas a última conversa associada ao external_thread_id. """
+    """ Recupera a última conversa associada ao external_thread_id. """
     # Busca a última conversa para o external_thread_id, ordenando por id em ordem decrescente
     thread = db.query(Thread).filter(Thread.external_thread_id == external_thread_id).first()
     
