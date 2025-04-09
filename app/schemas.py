@@ -16,7 +16,7 @@ class ThreadResponse(ThreadBase):
     thread_id: int  # O thread_id é o ID gerado internamente pelo banco de dados
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    messages: Optional[str] = None  # Adicionando a coluna de mensagens na Thread
+
     class Config:
         orm_mode = True  # Permite que o modelo seja convertido de ORM para Pydantic
 
