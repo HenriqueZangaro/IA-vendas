@@ -107,11 +107,28 @@ def create_conversation(db: Session, thread_id: int, messages: str):
 @app.post("/threads/{thread_id}/conversation", operation_id="create_conversation")
 def create_conversation_endpoint(thread_id: str, messages: str, db: Session = Depends(get_db)):
     try:
-        conversation = create_conversation(db, int(thread_id), messages)
-        return {"message": "Conversation created successfully", "conversation": conversation}
+        # Verificar se a thread existe (associado ao thread_id)
+        thread = db.query(Thread).filter(Thread.thread_id == int(thread_id)).first()
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        # Criar uma nova conversa associada à thread_id e salvar a mensagem
+        new_conversation = Conversation(
+            thread_id=int(thread_id),
+            status="iniciado",  # Status inicial da conversa
+            messages=messages  # Mensagem recebida ou gerada pela IA
+        )
+        
+        db.add(new_conversation)
+        db.commit()  # Salvar a conversa no banco
+        db.refresh(new_conversation)  # Atualiza a instância com os dados do banco
+
+        return {"message": "Conversation created successfully", "conversation": new_conversation}
+    
     except Exception as e:
         logger.error(f"Erro ao criar conversa: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 # Novo endpoint para recuperar a conversa existente usando thread_id
 @app.get("/threads/{thread_id}/conversation", operation_id="get_conversation_by_thread_id")
