@@ -4,7 +4,7 @@ from .database import engine, get_db
 from .models import Thread, Conversation
 from .models_base import Base
 from .routes import router
-from .crud import get_conversation_by_thread_id, get_thread_by_number  # Remover 'create_thread', pois não cria mais a thread
+from .crud import get_conversations_by_external_thread_id, get_thread_by_number
 import logging
 from sqlalchemy import inspect
 from .schemas import ThreadCreate
@@ -137,7 +137,7 @@ def get_conversation(thread_id: str, db: Session = Depends(get_db)):
         thread = db.query(Thread).filter(Thread.thread_id == int(thread_id)).first()
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
-        conversation = get_conversation_by_thread_id(db, thread_id)
+        conversation = get_conversations_by_external_thread_id(db, thread_id)
         if conversation:
             return {"exists": True, "conversation": conversation}
         else:
