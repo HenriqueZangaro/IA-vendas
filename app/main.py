@@ -4,9 +4,10 @@ from .database import engine, get_db
 from .models import Thread, Conversation
 from .models_base import Base
 from .routes import router
-from .crud import get_conversation_by_thread_id, get_thread_by_number, create_thread
+from .crud import get_conversation_by_thread_id, get_thread_by_number  # Remover 'create_thread', pois não cria mais a thread
 import logging
 from sqlalchemy import inspect
+from .schemas import ThreadCreate
 
 # Configuração do logging para DEBUG
 logging.basicConfig(level=logging.DEBUG)
@@ -57,23 +58,41 @@ def read_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         return {"exists": True, "thread": thread}
     raise HTTPException(status_code=404, detail="Thread not found")
 
-# Rota para criar uma nova thread se não existir
-@app.post("/threads/", operation_id="create_thread")
-def create_new_thread(whatsapp_number: str, thread_id: str, db: Session = Depends(get_db)):
+# Rota para salvar uma thread recebida
+@app.post("/threads/", operation_id="save_thread")
+def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
     try:
         # Garantir que o whatsapp_number não tenha espaços extras
-        whatsapp_number = whatsapp_number.strip()
+        whatsapp_number = request.whatsapp_number.strip()
         print(f"Verificando a thread para o número: {whatsapp_number}")
+        
         # Verificar se já existe uma thread com o número de whatsapp informado
         thread = get_thread_by_number(db, whatsapp_number)
         if thread:
             return {"message": "Thread already exists", "thread": thread}
-        # Caso não exista, cria uma nova thread
-        create_thread(db, whatsapp_number, thread_id)
-        return {"message": "Thread created successfully", "whatsapp_number": whatsapp_number, "thread_id": thread_id}
+
+        # Apenas salva a thread recebida (não cria uma nova)
+        new_thread = Thread(
+            whatsapp_number=whatsapp_number,
+            external_thread_id=request.external_thread_id.strip() if request.external_thread_id else None
+        )
+        db.add(new_thread)
+        db.commit()
+        db.refresh(new_thread)
+
+        return {
+            "message": "Thread saved successfully",
+            "thread": {
+                "thread_id": new_thread.thread_id,
+                "whatsapp_number": new_thread.whatsapp_number,
+                "created_at": new_thread.created_at,
+                "updated_at": new_thread.updated_at
+            }
+        }
+    
     except Exception as e:
-        print(f"❌ Erro ao criar thread: {e}")
-        logger.error(f"Erro ao criar thread: {e}")
+        print(f"❌ Erro ao salvar thread: {e}")
+        logger.error(f"Erro ao salvar thread: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Função para criar uma nova conversa
