@@ -9,10 +9,11 @@ class Thread(Base):
     thread_id = Column(Integer, primary_key=True, index=True)  # ID gerado pelo banco de dados
     whatsapp_number = Column(String(15), unique=True, nullable=False)
     external_thread_id = Column(Text, nullable=False, unique=True)  # Esse é o thread_id gerado pela OpenAI
+    messages = Column(Text, nullable=True)  # Adicionando a coluna de mensagens
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     
-    # Relacionamento com a tabela Conversation
+    # Relacionamento com a tabela Conversation (caso precise no futuro)
     conversations = relationship("Conversation", back_populates="thread", cascade="all, delete-orphan")
     
     # Índices adicionais

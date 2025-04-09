@@ -23,7 +23,8 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
                 "thread": {
                     "thread_id": thread.thread_id,
                     "whatsapp_number": thread.whatsapp_number,
-                    "external_thread_id": thread.external_thread_id
+                    "external_thread_id": thread.external_thread_id,
+                    "messages": thread.messages  # Incluindo as mensagens salvas
                 }
             }
 
@@ -42,6 +43,7 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
                 "thread_id": new_thread.thread_id,
                 "whatsapp_number": new_thread.whatsapp_number,
                 "external_thread_id": new_thread.external_thread_id,  # Este é o thread_id da OpenAI
+                "messages": new_thread.messages,  # Retornando as mensagens
                 "created_at": new_thread.created_at,
                 "updated_at": new_thread.updated_at
             }
@@ -67,7 +69,8 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
                 "thread": {
                     "thread_id": thread.thread_id,
                     "whatsapp_number": thread.whatsapp_number,
-                    "external_thread_id": thread.external_thread_id
+                    "external_thread_id": thread.external_thread_id,
+                    "messages": thread.messages  # Incluindo as mensagens salvas
                 }
             }
         else:
@@ -81,34 +84,13 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
 def get_conversation(thread_id: int, db: Session = Depends(get_db)):
     try:
         # Recupera todas as conversas associadas ao thread_id
-        conversations = db.query(Conversation).filter(Conversation.thread_id == thread_id).all()
+        thread = db.query(Thread).filter(Thread.thread_id == thread_id).first()
         
-        if not conversations:
-            raise HTTPException(status_code=404, detail="No conversations found for this thread_id")
+        if not thread:
+            raise HTTPException(status_code=404, detail="No thread found for this thread_id")
         
-        # Retorna todas as mensagens
-        return conversations  # Retorna a lista de conversas
+        # Retorna as mensagens associadas ao external_thread_id
+        return {"messages": thread.messages}
     except Exception as e:
         print(f"Erro ao recuperar a conversa: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao recuperar a conversa: {str(e)}")
-
-# Endpoint para atualizar o status da conversa
-@router.put("/threads/{thread_id}/status")
-def update_conversation(
-    thread_id: int,
-    status: str,
-    db: Session = Depends(get_db)
-):
-    try:
-        # Busca a conversa pelo thread_id
-        conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).first()
-        if conversation:
-            # Se encontrar a conversa, atualiza o status
-            conversation.status = status  # Assume que tem uma coluna status no modelo
-            db.commit()
-            return {"message": f"Status updated to {status} for thread_id {thread_id}"}
-        else:
-            raise HTTPException(status_code=404, detail="Conversation not found")
-    except Exception as e:
-        print(f"Erro ao atualizar status: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {str(e)}")
