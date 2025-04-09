@@ -8,7 +8,7 @@ class Thread(Base):
     
     thread_id = Column(Integer, primary_key=True, index=True)  # ID gerado pelo banco de dados
     whatsapp_number = Column(String(15), unique=True, nullable=False)
-    external_thread_id = Column(Text, nullable=False)  # Esse é o thread_id gerado pela OpenAI
+    external_thread_id = Column(Text, nullable=False, unique=True)  # Esse é o thread_id gerado pela OpenAI
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     
@@ -18,6 +18,7 @@ class Thread(Base):
     # Índices adicionais
     __table_args__ = (
         Index('idx_whatsapp_number', 'whatsapp_number'),
+        Index('idx_external_thread_id', 'external_thread_id'),  # Índice para o external_thread_id
     )
     
     def __repr__(self):
