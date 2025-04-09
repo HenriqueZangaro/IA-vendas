@@ -2,18 +2,19 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Thread, Conversation
-from .schemas import ThreadCreate, ThreadResponse, ConversationResponse, ConversationCreate  # Importando o esquema ConversationCreate
+from .schemas import ThreadCreate, ThreadResponse, ConversationResponse  # Importando o esquema ThreadResponse e ThreadCreate
 from typing import List, Optional
 
 router = APIRouter()
 
-# Endpoint para criar uma nova thread
-@router.post("/create-thread/", response_model=dict)
-def create_thread(request: ThreadCreate, db: Session = Depends(get_db)):
+# Endpoint para salvar a thread (não mais criar)
+@router.post("/save-thread/", response_model=ThreadResponse)
+def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
     try:
         # Garantir que o whatsapp_number não tenha espaços extras
         whatsapp_number = request.whatsapp_number.strip()
         print(f"Verificando a thread para o número: {whatsapp_number}")
+        
         # Verificar se já existe uma thread com o número de whatsapp informado
         thread = db.query(Thread).filter(Thread.whatsapp_number == whatsapp_number).first()
         if thread:
@@ -24,7 +25,8 @@ def create_thread(request: ThreadCreate, db: Session = Depends(get_db)):
                     "whatsapp_number": thread.whatsapp_number
                 }
             }
-        # Caso não exista, cria uma nova thread
+
+        # Apenas salva a thread criada pela OpenAI (não cria)
         new_thread = Thread(
             whatsapp_number=whatsapp_number,
             external_thread_id=request.external_thread_id.strip() if request.external_thread_id else None
@@ -32,16 +34,20 @@ def create_thread(request: ThreadCreate, db: Session = Depends(get_db)):
         db.add(new_thread)
         db.commit()
         db.refresh(new_thread)
+        
         return {
-            "message": "Thread created successfully",
+            "message": "Thread saved successfully",
             "thread": {
                 "thread_id": new_thread.thread_id,
-                "whatsapp_number": new_thread.whatsapp_number
+                "whatsapp_number": new_thread.whatsapp_number,
+                "created_at": new_thread.created_at,
+                "updated_at": new_thread.updated_at
             }
         }
+    
     except Exception as e:
-        print(f"Erro ao criar thread: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao criar thread: {str(e)}")
+        print(f"Erro ao salvar thread: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar thread: {str(e)}")
 
 # Endpoint para verificar a existência de uma thread
 @router.get("/check-thread/{whatsapp_number}")
