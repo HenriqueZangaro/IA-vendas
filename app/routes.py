@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Thread, Conversation
-from .schemas import ThreadCreate, ThreadResponse, ConversationResponse  # Importando o esquema ThreadResponse e ThreadCreate
+from .schemas import ThreadCreate, ThreadResponse, ConversationResponse  # Importando os esquemas ThreadResponse e ThreadCreate
 from typing import List, Optional
 
 router = APIRouter()
@@ -22,11 +22,12 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
                 "message": "Thread already exists",
                 "thread": {
                     "thread_id": thread.thread_id,
-                    "whatsapp_number": thread.whatsapp_number
+                    "whatsapp_number": thread.whatsapp_number,
+                    "external_thread_id": thread.external_thread_id
                 }
             }
 
-        # Apenas salva a thread criada pela OpenAI (não cria)
+        # Apenas salva a thread criada pela OpenAI (não cria uma nova thread)
         new_thread = Thread(
             whatsapp_number=whatsapp_number,
             external_thread_id=request.external_thread_id.strip() if request.external_thread_id else None
@@ -40,6 +41,7 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
             "thread": {
                 "thread_id": new_thread.thread_id,
                 "whatsapp_number": new_thread.whatsapp_number,
+                "external_thread_id": new_thread.external_thread_id,  # Este é o thread_id da OpenAI
                 "created_at": new_thread.created_at,
                 "updated_at": new_thread.updated_at
             }
@@ -56,6 +58,7 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
         # Garantir que o whatsapp_number não tenha espaços extras
         whatsapp_number = whatsapp_number.strip()
         print(f"Verificando a thread para o número: {whatsapp_number}")
+        
         # Verificar se já existe uma thread com o número de whatsapp informado
         thread = db.query(Thread).filter(Thread.whatsapp_number == whatsapp_number).first()
         if thread:
@@ -63,7 +66,8 @@ def check_thread(whatsapp_number: str, db: Session = Depends(get_db)):
                 "exists": True,
                 "thread": {
                     "thread_id": thread.thread_id,
-                    "whatsapp_number": thread.whatsapp_number
+                    "whatsapp_number": thread.whatsapp_number,
+                    "external_thread_id": thread.external_thread_id
                 }
             }
         else:

@@ -13,7 +13,7 @@ def clean_whatsapp_number(whatsapp_number: str) -> str:
     return cleaned_number
 
 def get_thread_by_number(db: Session, whatsapp_number: str):
-    """ Busca uma thread pelo número do WhatsApp. """
+    """ Busca uma thread pelo número de WhatsApp. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
     # Usando ORM para consultar a tabela 'Thread'
     thread = db.query(Thread).filter(Thread.whatsapp_number == cleaned_number).first()
@@ -22,7 +22,7 @@ def get_thread_by_number(db: Session, whatsapp_number: str):
     return None
 
 def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
-    """ Cria uma nova thread no banco de dados. """
+    """ Cria uma nova thread no banco de dados usando o external_thread_id recebido. """
     cleaned_number = clean_whatsapp_number(whatsapp_number)
     # Verificar se o número de WhatsApp já existe antes de criar a thread
     existing_thread = db.query(Thread).filter(Thread.whatsapp_number == cleaned_number).first()
@@ -32,14 +32,14 @@ def create_thread(db: Session, whatsapp_number: str, external_thread_id: str):
     # Criar uma nova instância da classe Thread e adicioná-la ao banco de dados
     new_thread = Thread(
         whatsapp_number=cleaned_number,
-        external_thread_id=external_thread_id
+        external_thread_id=external_thread_id  # Agora estamos usando o external_thread_id que vem da OpenAI
     )
     db.add(new_thread)
     db.commit()  # Necessário para salvar a alteração no banco
     db.refresh(new_thread)  # Atualiza a instância com os dados do banco, incluindo o ID gerado
     return new_thread
 
-def get_conversations_by_thread_id(db: Session, thread_id: str):
+def get_conversations_by_thread_id(db: Session, thread_id: int):
     """ Recupera apenas a última conversa associada ao thread_id. """
     # Busca a última conversa para o thread_id, ordenando por id em ordem decrescente
     conversation = db.query(Conversation).filter(Conversation.thread_id == thread_id).order_by(Conversation.id.desc()).first()
@@ -50,13 +50,13 @@ def get_conversations_by_thread_id(db: Session, thread_id: str):
     return None
 
 
-def get_conversation_by_thread_id(db: Session, thread_id: str):
+def get_conversation_by_thread_id(db: Session, thread_id: int):
     """ Recupera a última conversa associada ao thread_id. """
     return get_conversations_by_thread_id(db, thread_id)
 
 
-def create_conversation(db: Session, thread_id: str, status: str, messages: str):
-    """ Cria uma nova conversa no banco de dados. """
+def create_conversation(db: Session, thread_id: int, status: str, messages: str):
+    """ Cria uma nova conversa no banco de dados e associa ao thread_id. """
     # Verificar se o thread_id existe na tabela 'threads'
     thread = db.query(Thread).filter(Thread.thread_id == thread_id).first()
     if not thread:
@@ -77,9 +77,9 @@ def create_conversation(db: Session, thread_id: str, status: str, messages: str)
     
     return new_conversation
 
-def update_conversation_status(db: Session, thread_id: str, status: str):
+def update_conversation_status(db: Session, thread_id: int, status: str):
     """ Atualiza o status da conversa para um determinado thread_id. """
-    # Verificar se o thread_id existe na tabela 'threads'
+    # Verificar se o thread_id existe
     thread = db.query(Thread).filter(Thread.thread_id == thread_id).first()
     if not thread:
         raise ValueError(f"No thread found for thread_id {thread_id}")

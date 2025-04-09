@@ -6,9 +6,9 @@ from .models_base import Base
 class Thread(Base):
     __tablename__ = "threads"
     
-    thread_id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, primary_key=True, index=True)  # ID gerado pelo banco de dados
     whatsapp_number = Column(String(15), unique=True, nullable=False)
-    external_thread_id = Column(Text, nullable=False)
+    external_thread_id = Column(Text, nullable=False)  # Esse é o thread_id gerado pela OpenAI
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     
@@ -41,4 +41,4 @@ class Conversation(Base):
     )
     
     def __repr__(self):
-        return f"<Conversation(id={self.id}, thread_id={self.thread_id}, status={self.status})>"  # Corrigido para usar self.id
+        return f"<Conversation(id={self.id}, thread_id={self.thread_id}, status={self.status})>"
