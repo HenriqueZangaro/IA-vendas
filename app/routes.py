@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Thread, Conversation
-from .schemas import ThreadCreate, ThreadResponse, ConversationResponse  # Importando os esquemas ThreadResponse e ThreadCreate
+from .schemas import ThreadCreate, ThreadResponse, ConversationResponse
 from typing import List, Optional
+from datetime import datetime
 
 router = APIRouter()
 
@@ -18,16 +19,15 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
         # Verificar se já existe uma thread com o número de whatsapp informado
         thread = db.query(Thread).filter(Thread.whatsapp_number == whatsapp_number).first()
         if thread:
-            return {
-                "message": "Thread already exists",
-                "thread": {
-                    "thread_id": thread.thread_id,
-                    "whatsapp_number": thread.whatsapp_number,
-                    "external_thread_id": thread.external_thread_id
-                }
-            }
+            return ThreadResponse(  # Retorne a resposta usando o modelo ThreadResponse
+                thread_id=thread.thread_id,
+                whatsapp_number=thread.whatsapp_number,
+                external_thread_id=thread.external_thread_id,
+                created_at=thread.created_at,
+                updated_at=thread.updated_at
+            )
 
-        # Apenas salva a thread recebida (não cria uma nova)
+        # Caso a thread não exista, cria uma nova
         new_thread = Thread(
             whatsapp_number=whatsapp_number,
             external_thread_id=request.external_thread_id.strip() if request.external_thread_id else None
@@ -35,17 +35,15 @@ def save_thread(request: ThreadCreate, db: Session = Depends(get_db)):
         db.add(new_thread)
         db.commit()
         db.refresh(new_thread)
-        
-        return {
-            "message": "Thread saved successfully",
-            "thread": {
-                "thread_id": new_thread.thread_id,
-                "whatsapp_number": new_thread.whatsapp_number,
-                "external_thread_id": new_thread.external_thread_id,  # Este é o thread_id da OpenAI
-                "created_at": new_thread.created_at,
-                "updated_at": new_thread.updated_at
-            }
-        }
+
+        # Retornar a resposta usando o modelo ThreadResponse
+        return ThreadResponse(
+            thread_id=new_thread.thread_id,
+            whatsapp_number=new_thread.whatsapp_number,
+            external_thread_id=new_thread.external_thread_id,
+            created_at=new_thread.created_at,
+            updated_at=new_thread.updated_at
+        )
     
     except Exception as e:
         print(f"Erro ao salvar thread: {str(e)}")
